@@ -1,9 +1,30 @@
-use std::cell::{RefCell, RefMut};
+use std::cell::RefCell;
+use std::rc::Rc;
 use std::vec::Vec;
 use eframe::egui;
+use rand::distributions::uniform::SampleBorrow;
 use rusqlite::{Connection, Result};
+use rand::seq::SliceRandom;
+use rand::prelude::IndexedRandom;
 
 fn main() -> Result<(), eframe::Error> {
+    // env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
+    // let options = eframe::NativeOptions {
+    //     viewport: egui::ViewportBuilder::default().with_inner_size([600.0, 250.0]),
+    //     ..Default::default()
+    // };
+    //
+    // eframe::run_native(
+    //     "Vocabulary App",
+    //     options,
+    //     Box::new(|cc| {
+    //         // This gives us image support:
+    //         egui_extras::install_image_loaders(&cc.egui_ctx);
+    //         Box::<VocabApp>::default()
+    //     }),
+    // )
+
+
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default().with_inner_size([1920.0, 960.0]),
@@ -11,7 +32,7 @@ fn main() -> Result<(), eframe::Error> {
     };
 
     eframe::run_native(
-        "Vocabulary",
+        "Vocabulary Editor",
         options,
         Box::new(|cc| {
             // This gives us image support:
@@ -128,11 +149,45 @@ struct Vocab {
     editing_word: Word,
 }
 
+impl VocabApp {
+    fn get_words(&mut self) -> Result<()> {
+        self.words.clear();
+        let conn = Connection::open("vocab.db3")?;
+        let mut stmt = conn.prepare("SELECT id, word_eng, word_rus, word_esp, image_url, corrected, showed FROM words")?;
+        let words_iter = stmt.query_map([], |row| {
+            Ok(Word {
+                id: row.get(0)?,
+                word_eng: row.get(1)?,
+                word_rus: row.get(2)?,
+                word_esp: row.get(3)?,
+                image_url: row.get(4)?,
+                correct: row.get(5)?,
+                showed: row.get(6)?,
+                sentences: vec![]
+            })
+        })?;
+
+        for word in words_iter {
+            println!("word: {:?}", word);
+            self.words.push(word.unwrap());
+        }
+
+        for word in &mut self.words {
+            if let Err(e) = word.get_sentences() {
+                println!("Error: {}", e);
+            }
+        }
+        Ok(())
+    }
+}
+
 impl Vocab {
     fn save_word(&self, mut word: Word) -> Result<()> {
         if word.word_eng == "" {
             return Ok(());
         }
+
+        println!("save word: {:?}", word);
 
         let conn = Connection::open("vocab.db3")?;
         let last_id;
@@ -146,12 +201,10 @@ impl Vocab {
         } else {
             conn.execute(
                 "UPDATE words SET word_eng=?1, word_esp=?2, word_rus=?3, image_url=?4, showed=?5, corrected=?6 WHERE id=?7 ;",
-                &[&word.word_eng, &word.word_esp.to_string(), &word.word_rus.to_string(), &word.image_url.to_string(), &0.to_string(), &0.to_string(), &word.id.to_string()],
+                &[&word.word_eng, &word.word_esp.to_string(), &word.word_rus.to_string(), &word.image_url.to_string(), &word.showed.to_string(), &word.correct.to_string(), &word.id.to_string()],
             )?;
             last_id = word.id;
         }
-
-
 
         for mut sentence in &mut word.sentences {
             sentence.word_id = last_id;
@@ -225,6 +278,79 @@ impl Default for Vocab {
     }
 }
 
+struct VocabApp {
+    words: Vec<Word>,
+    showing_word: Option<Word>,
+    showing_sentence: Option<Sentence>,
+    show_answer: bool,
+    input_text: String
+}
+
+impl Default for VocabApp {
+    fn default() -> Self {
+        let mut vocabApp = Self {
+            words: Vec::new(),
+            showing_word: None,
+            showing_sentence: None,
+            show_answer: false,
+            input_text: "".to_string()
+        };
+
+
+        if let Err(e) = vocabApp.get_words() {
+            println!("Error: {}", e);
+        }
+
+        vocabApp
+    }
+}
+
+impl eframe::App for VocabApp {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        if self.showing_word.is_none() {
+            self.showing_word = Some(self.words.choose(&mut rand::thread_rng()).unwrap().clone());
+            self.showing_sentence = Some(self.showing_word.as_ref().unwrap().sentences.choose(&mut rand::thread_rng()).unwrap().clone());
+        }
+        let mut selected = self.input_text.to_string();
+        let word_eng = self.showing_word.as_ref().unwrap().word_eng.clone();
+        let sentence_eng = self.showing_sentence.as_ref().unwrap().sentence_eng.clone();
+        let sentence_rus = self.showing_sentence.as_ref().unwrap().sentence_rus.clone();
+
+        egui::CentralPanel::default().show(ctx, |ui| {
+            ui.horizontal(|ui| {
+                ui.label(format!("Word: {}", sentence_rus));
+            });
+            ui.separator();
+            ui.horizontal(|ui| {
+                let response = ui.add(egui::TextEdit::singleline(&mut selected));
+
+                response.request_focus();
+                // if response.changed() {
+                //     println!("changed");
+                // }
+                // response.lost_focus() &&
+                if ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                    println!("entered: {}", selected);
+                    self.show_answer = true;
+                }
+            });
+
+            if self.show_answer {
+                ui.separator();
+                ui.horizontal(|ui| {
+                    ui.label(format!("Word: {}", word_eng));
+                });
+                ui.horizontal(|ui| {
+                    ui.label(format!("Sentence eng: {}", sentence_eng));
+                });
+            }
+
+        });
+
+        self.input_text = selected;
+    }
+}
+
 impl eframe::App for Vocab {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
@@ -255,7 +381,7 @@ impl eframe::App for Vocab {
             }
 
             ui.separator();
-            let max_width = 1500.0;
+            let max_width = 1200.0;
             let loop_ = true;
             let mut i = 0;
 
@@ -312,7 +438,7 @@ impl eframe::App for Vocab {
                 }
             });
 
-            //
+
             // ui.horizontal(|ui| {
             //     if ui.button("Clear").clicked() {
             //         self.selected_option = None;
@@ -344,9 +470,6 @@ impl eframe::App for Vocab {
                 let name_label = ui.label("Eng: ");
                 ui.text_edit_singleline(&mut selected_option.word_eng).labelled_by(name_label.id);
             });
-
-
-
             ui.horizontal(|ui| {
                 let name_label = ui.label("Esp: ");
                 ui.text_edit_singleline(&mut selected_option.word_esp).labelled_by(name_label.id);
@@ -361,9 +484,21 @@ impl eframe::App for Vocab {
             });
             ui.horizontal(|ui| {
                 ui.label(format!("Correct: {}", selected_option.correct));
+                if ui.button("Increment correct").clicked() {
+                    selected_option.correct += 1;
+                }
+                if ui.button("Decrement correct").clicked() {
+                    selected_option.correct -= 1;
+                }
             });
             ui.horizontal(|ui| {
                 ui.label(format!("Showed: {}", selected_option.showed));
+                if ui.button("Increment showed").clicked() {
+                    selected_option.showed += 1;
+                }
+                if ui.button("Decrement showed").clicked() {
+                    selected_option.showed -= 1;
+                }
             });
 
             ui.separator();
