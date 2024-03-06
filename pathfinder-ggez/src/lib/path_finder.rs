@@ -60,8 +60,8 @@ impl PathFinder<'_> {
     //     self.start_node.as_mut().unwrap().gscore = self.cost_fn(&self.start_node.as_ref().unwrap(), &self.end_node.as_ref().unwrap());
     //     self.start_node.as_mut().unwrap().fscore = 0.0;
     //
-    //     self.end_node.as_mut().unwrap().parent = Some(Rc::cope(self.end_node.as_ref().unwrap()));
-    //     self.start_node.as_mut().unwrap().parent = Some(Rc::cope(self.start_node.as_ref().unwrap()));
+    //     self.end_node.as_mut().unwrap().parent = Some(Rc::copy(self.end_node.as_ref().unwrap()));
+    //     self.start_node.as_mut().unwrap().parent = Some(Rc::copy(self.start_node.as_ref().unwrap()));
     //
     //     self.list_not_tested_nodes.clear();
     //     self.list_not_tested_nodes.insert(self.start_node.as_ref().unwrap());

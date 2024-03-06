@@ -6,4 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+criterion = "0.5.1"
 ggez = "0.9.3"
+
+[[bin]]
+name = "pathfinder-ggez"
+path = "benchmark.rs"

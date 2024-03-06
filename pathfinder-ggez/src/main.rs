@@ -1,5 +1,6 @@
 mod lib;
 mod scene;
+mod benchmarks;
 
 use std::rc::Rc;
 use ggez::{GameError, timer};
