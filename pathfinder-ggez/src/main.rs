@@ -1,6 +1,5 @@
 mod lib;
 mod scene;
-mod benchmarks;
 
 use std::rc::Rc;
 use ggez::{GameError, timer};
@@ -62,13 +61,10 @@ impl MainState {
         let grid = Grid::new();
         let scene = Scene::new(_ctx, &grid);
 
-        let nodes_map = NodesMap::new(&grid);
-
+        let mut nodes_map = NodesMap::new(&grid);
         let n1 = nodes_map.get_node(&Index::new(0,0));
         let n2 = nodes_map.get_node(&Index::new(0,0));
-
-        let nrc = Rc::new(nodes_map.get_node(&Index::new(1,0)));
-
+        let nrc = nodes_map.get_node(&Index::new(1,0));
         println!("n1 == n2 {}", n1 == n2);
         println!("n1 == n1 {}", n1 == n1);
         println!("rc n1 == rc n2 {}", Rc::new(n1) == Rc::new(n2));

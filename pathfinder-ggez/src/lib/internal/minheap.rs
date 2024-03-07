@@ -1,9 +1,8 @@
-use std::rc::Rc;
-use crate::lib::Node;
+use crate::lib::RCNode;
 
 #[derive(Debug)]
 pub struct MinHeap {
-    nodes: Vec<Option<Rc<Node>>>,
+    nodes: Vec<Option<RCNode>>,
     capacity: usize,
     heap_size: usize
 }
@@ -34,10 +33,10 @@ impl MinHeap {
         let r = self.right(i);
         let mut smallest = i;
 
-        if l < self.heap_size && self.nodes[l].as_ref().unwrap().fscore < self.nodes[i].as_ref().unwrap().fscore {
+        if l < self.heap_size && self.nodes[l].as_ref().unwrap().as_ref().borrow().fscore < self.nodes[i].as_ref().unwrap().as_ref().borrow().fscore {
             smallest = l;
         }
-        if r < self.heap_size && self.nodes[r].as_ref().unwrap().fscore < self.nodes[smallest].as_ref().unwrap().fscore {
+        if r < self.heap_size && self.nodes[r].as_ref().unwrap().as_ref().borrow().fscore < self.nodes[smallest].as_ref().unwrap().as_ref().borrow().fscore {
             smallest = r;
         }
 
@@ -56,22 +55,23 @@ impl MinHeap {
 
     }
 
-    pub fn insert(&mut self, node: &Rc<Node>) {
+    pub fn insert(&mut self, node: RCNode) {
         if self.heap_size == self.capacity {
             self.heap_size -= 1;
         }
 
         self.heap_size += 1;
         let mut i = self.heap_size - 1;
-        self.nodes[i] = Some(Rc::copy(node));
+        // self.nodes[i] = Some(Rc::copy(node));
+        self.nodes[i] = Some(node);
 
-        while i != 0 && self.nodes[self.parent(i)].as_ref().unwrap().fscore > self.nodes[i].as_ref().unwrap().fscore {
+        while i != 0 && self.nodes[self.parent(i)].as_ref().unwrap().as_ref().borrow().fscore > self.nodes[i].as_ref().unwrap().as_ref().borrow().fscore {
             self.swap(i, self.parent(i));
             i = self.parent(i);
         }
     }
 
-    pub fn get_min(&mut self) -> Option<Rc<Node>> {
+    pub fn get_min(&mut self) -> Option<RCNode> {
         if self.heap_size == 0 {
             return None
         }

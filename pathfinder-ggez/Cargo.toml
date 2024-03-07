@@ -9,6 +9,6 @@ edition = "2021"
 criterion = "0.5.1"
 ggez = "0.9.3"
 
-[[bin]]
-name = "pathfinder-ggez"
-path = "benchmark.rs"
+#[[bin]]
+#name = "pathfinder-ggez"
+#path = "benchmark.rs"

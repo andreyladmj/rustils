@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::time::Instant;
-use crate::lib::{MinHeap, Node, Point};
+use crate::lib::{MinHeap, Node, Point, RCNode};
 use crate::lib::grid::Grid;
 use crate::lib::nodes::NodesMap;
 
@@ -12,21 +12,21 @@ const MAX_ITERATIONS: u32 = 10000000;
 struct PathFinder<'a> {
     start_pos: Option<Point>,
     end_pos: Option<Point>,
-    start_node: Option<Rc<Node>>,
-    end_node: Option<Rc<Node>>,
-    current_node: Option<Rc<Node>>,
+    start_node: Option<RCNode>,
+    end_node: Option<RCNode>,
+    current_node: Option<RCNode>,
     found: bool,
     iterations: u32,
     k: f32,
     vessel_speed_knots: f32,
-    candidate_weights: HashMap<Rc<Node>, f32>,
+    candidate_weights: HashMap<RCNode, f32>,
     list_not_tested_nodes: MinHeap,
-    nodes_map: &'a NodesMap,
+    nodes_map: &'a NodesMap<'a>,
     grid: &'a Grid,
 }
 
-impl PathFinder<'_> {
-    pub fn new(nodes_map: &NodesMap, grid: &Grid) -> Self {
+impl<'a> PathFinder<'a> {
+    pub fn new(nodes_map: &'a NodesMap, grid: &'a Grid) -> Self {
 
         Self {
             start_pos: None,
@@ -48,7 +48,7 @@ impl PathFinder<'_> {
     pub fn find(&mut self, start_point: Point, end_point: Point) {
         self.start_pos = Some(start_point);
         self.end_pos = Some(end_point);
-        self.find_path();
+        // self.find_path();
     }
 
     // fn find_path(&mut self) {
@@ -71,7 +71,7 @@ impl PathFinder<'_> {
     //     let start = Instant::now();
     //     self.search_end_node();
     //     let duration = start.elapsed();
-    //     println!("Time elapsed in expensive_function() is: {:?}", duration);
+    //     println!("Time elapsed in find path is: {:?}", duration);
     //
     // }
     //

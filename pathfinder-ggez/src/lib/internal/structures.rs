@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::rc::Rc;
 
 #[derive(Debug)]
@@ -25,6 +26,8 @@ impl Index {
 }
 
 
+pub type RCNode = Rc<RefCell<Node>>;
+
 #[derive(Debug)]
 pub struct Node {
     pub index: Index,
@@ -45,5 +48,11 @@ impl Node {
             gscore: f32::INFINITY,
             parent: None,
         }
+    }
+}
+
+impl PartialEq for Node {
+    fn eq(&self, other: &Self) -> bool {
+        self.index.idx_lat == other.index.idx_lat && self.index.idx_lon == other.index.idx_lon
     }
 }
