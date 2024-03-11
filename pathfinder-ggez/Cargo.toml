@@ -12,3 +12,9 @@ ggez = "0.9.3"
 #[[bin]]
 #name = "pathfinder-ggez"
 #path = "benchmark.rs"
+
+#[profile.release]
+#debug = 1
+#
+#[rust]
+#debuginfo-level = 1

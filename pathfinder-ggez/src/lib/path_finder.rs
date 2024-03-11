@@ -1,20 +1,19 @@
 use std::collections::HashMap;
-use std::rc::Rc;
 use std::time::Instant;
-use crate::lib::{haversine_rad, MinHeap, Node, Point, RCNode};
+use crate::lib::{haversine_rad, is_visible, MinHeap, Node, Point, RCNode};
 use crate::lib::grid::Grid;
 use crate::lib::nodes::NodesMap;
 
 
 const HEAP_SIZE: usize = 10000000;
-const MAX_ITERATIONS: u32 = 10000000;
+const MAX_ITERATIONS: u32 = 1000000;
 
-struct PathFinder<'a> {
+pub struct PathFinder<'a> {
     start_pos: Option<Point>,
     end_pos: Option<Point>,
     start_node: Option<RCNode>,
     end_node: Option<RCNode>,
-    current_node: Option<RCNode>,
+    pub current_node: Option<RCNode>,
     found: bool,
     iterations: u32,
     k: f32,
@@ -48,7 +47,7 @@ impl<'a> PathFinder<'a> {
     pub fn find(&mut self, start_point: Point, end_point: Point) {
         self.start_pos = Some(start_point);
         self.end_pos = Some(end_point);
-        // self.find_path();
+        self.find_path();
     }
 
     fn find_path(&mut self) {
@@ -57,7 +56,7 @@ impl<'a> PathFinder<'a> {
         self.found = false;
         self.iterations = 0;
 
-        self.start_node.as_ref().unwrap().borrow_mut().gscore = self.cost_fn(self.start_node.as_ref().unwrap().clone(), self.end_node.as_ref().unwrap().clone());
+        self.start_node.as_ref().unwrap().borrow_mut().gscore = self.cost_fn(self.start_node.as_ref().unwrap(), self.end_node.as_ref().unwrap());
         self.start_node.as_mut().unwrap().borrow_mut().fscore = 0.0;
 
         self.end_node.as_mut().unwrap().borrow_mut().parent = Some(self.end_node.as_ref().unwrap().clone());
@@ -71,7 +70,7 @@ impl<'a> PathFinder<'a> {
         let start = Instant::now();
         self.search_end_node();
         let duration = start.elapsed();
-        println!("Time elapsed in find path is: {:?}", duration);
+        println!("Time elapsed in find path is: {:?} at {} iterations", duration, self.iterations);
 
     }
 
@@ -83,6 +82,7 @@ impl<'a> PathFinder<'a> {
         }
 
         self.current_node = self.list_not_tested_nodes.get_min();
+        // println!("iter: {}, self.current_node: {?:}", self.iterations, self.current_node.as_ref().unwrap());
 
         if self.current_node.as_ref().unwrap().borrow().visited {
             return;
@@ -92,8 +92,8 @@ impl<'a> PathFinder<'a> {
         let parent = self.current_node.as_ref().unwrap().borrow().parent.clone();
 
 
-        println!("comparing ref 1: {}", self.current_node.as_ref().unwrap().borrow().index == parent.unwrap().borrow().index);
-        println!("comparing ref 2: {}", self.current_node == parent);
+        // println!("comparing ref 1: {}", self.current_node.as_ref().unwrap().borrow().index == parent.as_ref().unwrap().borrow().index);
+        // println!("comparing ref 2: {}", self.current_node == parent);
         let neighbours = self.nodes_map.get_neighbours(self.current_node.as_ref().unwrap());
 
         for neighbour in &neighbours {
@@ -106,19 +106,21 @@ impl<'a> PathFinder<'a> {
                     let (new_weight, update_parent) = self.check_availability_to_move(parent.as_ref().unwrap(), self.current_node.as_ref().unwrap(), neighbour);
 
                     if candidate_weight > new_weight {
-                        self.update_vertex(self.current_node.as_ref().unwrap(), neighbour, new_weight, update_parent);
+                        let n = self.current_node.clone().unwrap();
+                        self.update_vertex(&n, neighbour, new_weight, update_parent);
                     }
                 }
             } else {
-                if self.is_nodes_visible(self.current_node, neighbour) {
-                    let (new_weight, update_parent) = self.check_availability_to_move(parent, self.current_node, neighbour);
-                    self.update_vertex(self.current_node, neighbour, new_weight, update_parent);
+                if self.is_nodes_visible(self.current_node.as_ref().unwrap(), neighbour) {
+                    let (new_weight, update_parent) = self.check_availability_to_move(parent.as_ref().unwrap(), self.current_node.as_ref().unwrap(), neighbour);
+                    let n = self.current_node.clone().unwrap();
+                    self.update_vertex(&n, neighbour, new_weight, update_parent);
                 }
             }
 
             if self.is_search_node_found(neighbour) {
-                neighbour.parent = self.current_node.clone();
-                self.end_node.as_mut().unwrap().parent = neighbour;
+                neighbour.borrow_mut().parent = self.current_node.clone();
+                self.end_node.as_ref().unwrap().borrow_mut().parent = Some(neighbour.clone());
                 self.found = true;
                 return;
             }
@@ -136,7 +138,7 @@ impl<'a> PathFinder<'a> {
         }
     }
 
-    fn cost_fn(&self, node1: RCNode, node2: RCNode) -> f32 {
+    fn cost_fn(&self, node1: &RCNode, node2: &RCNode) -> f32 {
         let p1 = self.grid.get_point(&node1.as_ref().borrow().index);
         let p2 = self.grid.get_point(&node2.as_ref().borrow().index);
         haversine_rad(p1.lat, p1.lon, p2.lat, p2.lon)
@@ -146,18 +148,18 @@ impl<'a> PathFinder<'a> {
         self.update_weight(neighbour, weight);
 
         if update_parent {
-            neighbour.as_ref().borrow_mut().parent = current;
+            neighbour.as_ref().borrow_mut().parent = Some(current.clone());
         } else {
             neighbour.as_ref().borrow_mut().parent = current.as_ref().borrow().parent.clone();
         }
 
         neighbour.as_ref().borrow_mut().gscore = weight;
-        neighbour.as_ref().borrow_mut().fscore = weight + self.k * self.cost_fn(&neighbour, &self.end_node);
+        neighbour.as_ref().borrow_mut().fscore = weight + self.k * self.cost_fn(&neighbour, &self.end_node.as_ref().unwrap());
 
-        self.list_not_tested_nodes.insert(neighbour);
+        self.list_not_tested_nodes.insert(neighbour.clone());
     }
 
-    fn check_availability_to_move(&mut self, parent: &RCNode, current: &RCNode, neighbour: &RCNode) -> (f32, bool) {
+    fn check_availability_to_move(&self, parent: &RCNode, current: &RCNode, neighbour: &RCNode) -> (f32, bool) {
         let mut new_weight: f32;
         let mut update_parent: bool;
 
@@ -173,7 +175,7 @@ impl<'a> PathFinder<'a> {
     }
 
     fn update_weight(&mut self, node: &RCNode, weight: f32) {
-        self.candidate_weights.insert(node.hash_idx(), weight);
+        self.candidate_weights.insert(node.as_ref().borrow().hash_idx(), weight);
     }
 
     fn has_candidate(&self, node: &RCNode) -> bool {
@@ -181,7 +183,11 @@ impl<'a> PathFinder<'a> {
     }
 
     fn is_search_node_found(&self, node: &RCNode) -> bool {
-        self.is_nodes_visible(node, &self.end_node);
+        self.is_nodes_visible(node, self.end_node.as_ref().unwrap())
+    }
+
+    fn is_nodes_visible(&self, node1: &RCNode, node2: &RCNode) -> bool {
+        is_visible(&node1.as_ref().borrow().index, &node2.as_ref().borrow().index, self.grid)
     }
 
 }

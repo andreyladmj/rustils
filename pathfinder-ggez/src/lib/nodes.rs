@@ -59,14 +59,17 @@ impl <'a>NodesMap<'a> {
         let mut neighbours = vec![];
 
         for (dx, dy) in SIGNS {
-            if node.index.idx_lat as i32 + dy < 0 || node.index.idx_lon as i32 + dx < 0 {
+            if node.as_ref().borrow().index.idx_lat as i32 + dy < 0 || node.as_ref().borrow().index.idx_lon as i32 + dx < 0 {
                 continue;
             }
-            let idx = Index::new((node.index.idx_lat as i32 + dy) as u32, (node.index.idx_lon as i32 + dx) as u32);
-            let n = self.get_node(&idx);
+            let idx = Index::new((node.as_ref().borrow().index.idx_lat as i32 + dy) as u32, (node.as_ref().borrow().index.idx_lon as i32 + dx) as u32);
 
-            if self.valid(&idx) && !n.as_ref().borrow().visited {
-                neighbours.push(n);
+            if self.valid(&idx) {
+                let n = self.get_node(&idx);
+
+                if !n.as_ref().borrow().visited {
+                    neighbours.push(n);
+                }
             }
         }
 
@@ -77,7 +80,7 @@ impl <'a>NodesMap<'a> {
         let n_idx = (idx.idx_lon * N_LAT + idx.idx_lat) as usize;
         if self.nodes[n_idx].is_none() {
             self.nodes[n_idx] = Some(RCNode::new(RefCell::new(Node::new(Index::new(idx.idx_lat, idx.idx_lon)))));
-            self.nodes[n_idx].as_ref().unwrap().borrow_mut().obstacle = self.grid.is_traversable(idx) != 0
+            self.nodes[n_idx].as_ref().unwrap().borrow_mut().obstacle = self.grid.is_traversable(idx) == 0
         }
         Rc::clone(&self.nodes[n_idx].as_ref().unwrap())
     }

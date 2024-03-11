@@ -13,7 +13,7 @@ impl Grid {
     pub fn new() -> Self {
         let data = read_bin("assets/bathymetry.bin".to_string());
         let longitudes = get_longitudes(N_LON as usize);
-        let latitudes = get_longitudes(N_LAT as usize);
+        let latitudes = get_latitudes(N_LAT as usize);
 
         Self {
             bathymetry: data,
@@ -57,7 +57,7 @@ fn get_longitudes(size: usize) -> Vec<f32> {
     let mut v = vec![0.0f32; size];
     let step = 2.0 * PI / (size as f32 - 1.0);
     for i in 0..size {
-        v[i] = - PI - step * i as f32;
+        v[i] = - PI + step * i as f32;
     }
     v
 }

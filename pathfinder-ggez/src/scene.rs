@@ -1,9 +1,10 @@
 use ggez::{Context, GameResult, glam, graphics};
 use ggez::graphics::{Canvas, Color, Image, ImageFormat};
-use ggez::mint::Vector2;
-use crate::lib::{grid, Index, Node, Point};
+use ggez::mint::{Point2, Vector2};
+use crate::lib::{Index, Node, Point};
 use crate::lib::grid::Grid;
 use crate::{N_LAT, N_LON};
+use crate::lib::path_finder::PathFinder;
 
 struct Tile {
     img: Image,
@@ -75,6 +76,78 @@ impl Scene {
         Ok(())
     }
 
+    pub fn draw_path(&mut self, ctx: &mut Context, canvas: &mut Canvas, path: Vec<Index>) -> GameResult {
+        let mb = &mut graphics::MeshBuilder::new();
+
+        for n in 1..path.len() {
+            let idxs1 = [(path[n].idx_lon as f32 + self.origin.lon) * self.zoom, (path[n].idx_lat as f32 + self.origin.lat) * self.zoom];
+            let p1 = Point2::from_slice(&idxs1);
+            let idxs2 = [(path[n - 1].idx_lon as f32 + self.origin.lon) * self.zoom, (path[n - 1].idx_lat as f32 + self.origin.lat) * self.zoom];
+            let p2 = Point2::from_slice(&idxs2);
+            mb.line(
+                &[p1, p2],
+                2.0,
+                Color::GREEN,
+            ).unwrap();
+        }
+
+        // mb.line(
+        //     &[Point2::from([50.0, 50.0]), Point2::from([10.0, 10.0])],
+        //     12.0,
+        //     Color::GREEN,
+        // ).unwrap();
+
+        // let mb = &mut graphics::MeshBuilder::new();
+        // mb.rectangle(
+        //     graphics::DrawMode::stroke(1.0),
+        //     graphics::Rect::new(450.0, 450.0, 50.0, 50.0),
+        //     graphics::Color::new(1.0, 0.0, 0.0, 1.0),
+        // )?;
+
+        let mesh = graphics::Mesh::from_data(ctx, mb.build());
+        canvas.draw(&mesh, graphics::DrawParam::new());
+
+        // graphics::present(ctx);
+
+        // let mesh = graphics::MeshBuilder::new()
+        //     // Add vertices for 3 lines (in an approximate equilateral triangle).
+        //     .line(
+        //         &[
+        //             glam::vec2(0.0, 0.0),
+        //             glam::vec2(-30.0, 52.0),
+        //             glam::vec2(30.0, 52.0),
+        //             glam::vec2(0.0, 0.0),
+        //         ],
+        //         1.0,
+        //         graphics::Color::WHITE,
+        //     )?
+        //     // Add vertices for an exclamation mark!
+        //     .ellipse(graphics::DrawMode::fill(), glam::vec2(0.0, 25.0), 2.0, 15.0, 2.0, graphics::Color::WHITE,)?
+        //     .circle(graphics::DrawMode::fill(), glam::vec2(0.0, 45.0), 2.0, 2.0, graphics::Color::WHITE,)?
+        //     // Finalize then unwrap. Unwrapping via `?` operator either yields the final `Mesh`,
+        //     // or propagates the error (note return type).
+        //     .build()?;
+
+        // canvas.draw(mb);
+
+        // while path_finder.current_node.is_some() && path_finder.current_node.as_ref().unwrap().borrow().parent != path_finder.current_node {
+        //     let node = path_finder.current_node.as_ref().unwrap().clone();
+        //     // let idx1 = node.borrow().parent.as_ref().unwrap().borrow().index;
+        //     // let idx2 = node.borrow().parent.as_ref().unwrap().borrow().clone().index;
+        //     let idxs1 = [node.borrow().index.idx_lon as f32, node.borrow().index.idx_lat as f32];
+        //     let idxs2 = [node.borrow().parent.as_ref().unwrap().borrow().index.idx_lon as f32, node.borrow().parent.as_ref().unwrap().borrow().index.idx_lat as f32];
+        //     let p1 = Point2::from_slice(&idxs1);
+        //     let p2 = Point2::from_slice(&idxs2);
+        //     mb.line(
+        //         &[p1, p2],
+        //         2.0,
+        //         Color::GREEN,
+        //     ).unwrap();
+        // }
+
+        Ok(())
+    }
+
     pub fn update_origin(&mut self, _dx: f32, _dy: f32) {
         self.origin.lat += _dy;
         self.origin.lon += _dx;
@@ -82,7 +155,6 @@ impl Scene {
 
     pub fn set_zoom(&mut self, zoom: f32) {
         self.zoom = zoom;
-        println!("zoom: {}", self.zoom);
     }
 
     pub fn get_zoom(&mut self) -> f32 {

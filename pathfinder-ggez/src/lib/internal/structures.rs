@@ -12,9 +12,12 @@ impl Point {
     pub fn new(lat: f32, lon: f32) -> Self {
         Self { lat, lon }
     }
+    pub fn from_deg(lat: f32, lon: f32) -> Self {
+        Self { lat: lat.to_radians(), lon: lon.to_radians() }
+    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Index {
     pub idx_lat: u32,
     pub idx_lon: u32,

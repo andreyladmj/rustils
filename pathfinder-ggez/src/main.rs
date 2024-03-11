@@ -2,17 +2,19 @@ mod lib;
 mod scene;
 
 use std::rc::Rc;
+use std::vec;
 use ggez::{GameError, timer};
 use ggez::{conf, Context, ContextBuilder, GameResult, glam};
 use ggez::conf::{FullscreenType, WindowMode};
 use ggez::graphics::{self, Color, Image, ImageFormat};
 use ggez::event::{self, EventHandler, MouseButton};
 use ggez::input::keyboard::KeyCode;
-use ggez::mint::Vector2;
+use ggez::mint::{Point2, Vector2};
 
 use crate::lib::*;
 use crate::lib::grid::Grid;
 use crate::lib::nodes::NodesMap;
+use crate::lib::path_finder::PathFinder;
 use crate::scene::Scene;
 
 
@@ -52,6 +54,7 @@ fn main() {
 struct MainState {
     grid: Grid,
     scene: Scene,
+    path: Vec<Index>,
     is_zooming: bool,
     is_moving: bool,
 }
@@ -62,18 +65,37 @@ impl MainState {
         let scene = Scene::new(_ctx, &grid);
 
         let mut nodes_map = NodesMap::new(&grid);
-        let n1 = nodes_map.get_node(&Index::new(0,0));
-        let n2 = nodes_map.get_node(&Index::new(0,0));
-        let nrc = nodes_map.get_node(&Index::new(1,0));
-        println!("n1 == n2 {}", n1 == n2);
-        println!("n1 == n1 {}", n1 == n1);
-        println!("rc n1 == rc n2 {}", Rc::new(n1) == Rc::new(n2));
-        println!("nrc == nrc {}", nrc == nrc);
-        println!("nrc == nrc clone {}", nrc == Rc::clone(&nrc));
+        let mut path_finder = path_finder::PathFinder::new(&mut nodes_map, &grid);
+        // path_finder.find(Point::from_deg(23.789676, 117.796553), Point::from_deg(-32.3447, 17.7425));
+        // path_finder.find(Point::from_deg(23.789676, 117.796553), Point::from_deg(-31.770058, 114.579131));
+        path_finder.find(Point::from_deg(23.789676, 117.796553), Point::from_deg(-14.397269, 46.991240));
+
+        let mut path = vec![];
+        let mut current_node = path_finder.current_node;
+        // let mut parent_node = current_node.as_ref().unwrap().borrow().parent.clone();
+        while current_node.is_some() && current_node.as_ref().unwrap().borrow().parent != current_node {
+            let node = current_node.as_ref().unwrap().clone();
+            path.push(node.borrow().index.clone());
+            current_node = current_node.clone().as_ref().unwrap().borrow().parent.clone();
+        }
+        let node = current_node.as_ref().unwrap().clone();
+        path.push(node.borrow().index.clone());
+        println!("self.path len: {}", path.len());
+        // let mut nodes_map = NodesMap::new(&grid);
+        // let n1 = nodes_map.get_node(&Index::new(0,0));
+        // let n2 = nodes_map.get_node(&Index::new(0,0));
+        // let nrc = nodes_map.get_node(&Index::new(1,0));
+        // println!("n1 == n2 {}", n1 == n2);
+        // println!("n1 == n1 {}", n1 == n1);
+        // println!("rc n1 == rc n2 {}", Rc::new(n1) == Rc::new(n2));
+        // println!("nrc == nrc {}", nrc == nrc);
+        // println!("nrc == nrc clone {}", nrc == Rc::clone(&nrc));
 
         MainState {
             grid: grid,
             scene: scene,
+            path: path,
+            // path_finder: path_finder,
             is_zooming: false,
             is_moving: false,
         }
@@ -133,6 +155,7 @@ impl EventHandler for MainState {
 
         // canvas.draw(&self.worldmap, graphics::DrawParam::new());
         self.scene.draw(ctx, &mut canvas).expect("Scene draw failed");
+        self.scene.draw_path(ctx, &mut canvas, self.path.clone()).expect("Scene draw path failed");
 
         canvas.finish(ctx)
     }
