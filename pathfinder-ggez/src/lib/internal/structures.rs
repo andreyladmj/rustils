@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
+use crate::N_LAT;
 
 #[derive(Debug)]
 pub struct Point {
@@ -25,6 +26,11 @@ impl Index {
     }
 }
 
+impl PartialEq for Index {
+    fn eq(&self, other: &Self) -> bool {
+        self.idx_lat == other.idx_lat && self.idx_lon == other.idx_lon
+    }
+}
 
 pub type RCNode = Rc<RefCell<Node>>;
 
@@ -35,7 +41,7 @@ pub struct Node {
     pub obstacle: bool,
     pub fscore: f32,
     pub gscore: f32,
-    pub parent: Option<Rc<Node>>,
+    pub parent: Option<RCNode>,
 }
 
 impl Node {
@@ -49,10 +55,14 @@ impl Node {
             parent: None,
         }
     }
+
+    pub fn hash_idx(&self) -> u32 {
+        self.index.idx_lon * N_LAT + (N_LAT - self.index.idx_lat - 1)
+    }
 }
 
 impl PartialEq for Node {
     fn eq(&self, other: &Self) -> bool {
-        self.index.idx_lat == other.index.idx_lat && self.index.idx_lon == other.index.idx_lon
+        self.index == other.index
     }
 }

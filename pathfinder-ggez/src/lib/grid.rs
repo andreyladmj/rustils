@@ -33,7 +33,7 @@ impl Grid {
         self.step
     }
 
-    pub fn get_point(&self, idx: Index) -> Point {
+    pub fn get_point(&self, idx: &Index) -> Point {
         Point::new(self.latitudes[idx.idx_lat as usize], self.longitudes[idx.idx_lon as usize])
     }
 

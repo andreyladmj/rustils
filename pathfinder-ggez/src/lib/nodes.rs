@@ -55,7 +55,7 @@ impl <'a>NodesMap<'a> {
         }
     }
 
-    pub fn get_neighbours(&mut self, node: &Node) -> Vec<RCNode> {
+    pub fn get_neighbours(&mut self, node: &RCNode) -> Vec<RCNode> {
         let mut neighbours = vec![];
 
         for (dx, dy) in SIGNS {
