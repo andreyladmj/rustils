@@ -1,5 +1,4 @@
 use std::cell::RefCell;
-use std::ops::Deref;
 use std::rc::Rc;
 use std::time::Instant;
 use crate::lib::grid::Grid;
@@ -31,22 +30,14 @@ impl <'a>NodesMap<'a> {
         let duration = start.elapsed();
         println!("Time elapsed in NodesMap creation is: {:?}", duration);
 
-
+        // land points: 79600971, its: 34.1225%
+        // so its better to fill whole map with None
+        // and create node only when accessing it
         let node_size = std::mem::size_of::<Vec<RCNode>>() + nodes.capacity() * std::mem::size_of::<RCNode>();
-        // let node_size = std::mem::size_of_val(&nodes);
-        println!("nodes size: {}b", node_size);
-        println!("nodes size: {}Mb", node_size as f32 * 0.000001);
+        println!("RCNode size: {}Mb", node_size as f32 * 0.000001);
 
         let node_size2 = std::mem::size_of::<Vec<Node>>() + nodes.capacity() * std::mem::size_of::<Node>();
-        // let node_size = std::mem::size_of_val(&nodes);
-        println!("nodes size: {}b", node_size2);
-        println!("nodes size: {}Mb", node_size2 as f32 * 0.000001);
-        // println!("nodes size: {}Mb", nodes.len() as f32 * node_size as f32 * 0.000001);
-        // land points: 79600971, its: 34.1225%
-        // size of node: 32b
-        // size of whole nodes: 7464.96Mb
-        // nodes size: 24
-        // nodes size: 5598.72
+        println!("Node size: {}Mb", node_size2 as f32 * 0.000001);
 
 
         Self {

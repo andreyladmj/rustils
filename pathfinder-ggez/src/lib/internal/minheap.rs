@@ -62,7 +62,6 @@ impl MinHeap {
 
         self.heap_size += 1;
         let mut i = self.heap_size - 1;
-        // self.nodes[i] = Some(Rc::copy(node));
         self.nodes[i] = Some(node);
 
         while i != 0 && self.nodes[self.parent(i)].as_ref().unwrap().as_ref().borrow().fscore > self.nodes[i].as_ref().unwrap().as_ref().borrow().fscore {
@@ -83,7 +82,6 @@ impl MinHeap {
 
         let root = self.nodes[0].clone();
         self.nodes.swap(0, self.heap_size - 1);
-        // self.nodes[0] = self.nodes[self.heap_size - 1];
         self.heap_size -= 1;
         self.heapify(0);
         return root

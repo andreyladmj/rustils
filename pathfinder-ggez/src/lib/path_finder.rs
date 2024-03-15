@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::time::Instant;
-use crate::lib::{haversine_rad, is_visible, MinHeap, Node, Point, RCNode};
+use crate::lib::{haversine_rad, Index, is_visible, MinHeap, Node, Point, RCNode};
 use crate::lib::grid::Grid;
 use crate::lib::nodes::NodesMap;
 
@@ -82,7 +82,6 @@ impl<'a> PathFinder<'a> {
         }
 
         self.current_node = self.list_not_tested_nodes.get_min();
-        // println!("iter: {}, self.current_node: {?:}", self.iterations, self.current_node.as_ref().unwrap());
 
         if self.current_node.as_ref().unwrap().borrow().visited {
             return;
@@ -92,8 +91,6 @@ impl<'a> PathFinder<'a> {
         let parent = self.current_node.as_ref().unwrap().borrow().parent.clone();
 
 
-        // println!("comparing ref 1: {}", self.current_node.as_ref().unwrap().borrow().index == parent.as_ref().unwrap().borrow().index);
-        // println!("comparing ref 2: {}", self.current_node == parent);
         let neighbours = self.nodes_map.get_neighbours(self.current_node.as_ref().unwrap());
 
         for neighbour in &neighbours {
@@ -190,4 +187,16 @@ impl<'a> PathFinder<'a> {
         is_visible(&node1.as_ref().borrow().index, &node2.as_ref().borrow().index, self.grid)
     }
 
+    pub fn get_path(&self) -> Vec<Index> {
+        let mut path = vec![];
+        let mut current_node = self.current_node.clone();
+        while current_node.is_some() && current_node.as_ref().unwrap().borrow().parent != current_node {
+            let node = current_node.as_ref().unwrap().clone();
+            path.push(node.borrow().index.clone());
+            current_node = current_node.clone().as_ref().unwrap().borrow().parent.clone();
+        }
+        let node = current_node.as_ref().unwrap().clone();
+        path.push(node.borrow().index.clone());
+        path
+    }
 }

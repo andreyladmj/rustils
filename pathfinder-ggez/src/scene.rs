@@ -4,7 +4,6 @@ use ggez::mint::{Point2, Vector2};
 use crate::lib::{Index, Node, Point};
 use crate::lib::grid::Grid;
 use crate::{N_LAT, N_LON};
-use crate::lib::path_finder::PathFinder;
 
 struct Tile {
     img: Image,
@@ -35,12 +34,9 @@ impl Scene {
                     for ilon in 0..nklon {
                         let depth = grid.is_traversable(&Index::new(ilat + iy * nklat, ilon + ix * nklon));
                         if depth == 0 {
-                            // slice1.push((128 + depth, 128 + depth, 200 + depth / 2, 100).to_rgba_u32());
-                            // slice1.push(Color::from((128, 128, 200, 100)).to_rgba_u32() as u8);
                             slice.push(150);
                             land_points += 1;
                         } else {
-                            // slice1.push(Color::from((0, 0, 135, 100)).to_rgba_u32() as u8);
                             slice.push(0);
                         }
                     }
@@ -54,11 +50,6 @@ impl Scene {
 
             }
         }
-        let node_size = std::mem::size_of::<Node>();
-        println!("map size: {}", N_LAT * N_LON);
-        println!("land points: {}, its: {}%", land_points, land_points as f32 / (N_LAT * N_LON) as f32 * 100.0);
-        println!("size of node: {}b", node_size);
-        println!("size of whole nodes: {}Mb", node_size as f32 * N_LAT as f32 * N_LON as f32 * 0.000001);
 
         Self {
             tiles: tiles,

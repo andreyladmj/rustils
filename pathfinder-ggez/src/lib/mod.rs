@@ -1,5 +1,4 @@
 pub mod grid;
-// pub mod map;
 pub mod internal;
 pub mod path_finder;
 pub mod nodes;
